@@ -1,8 +1,30 @@
 import speech_recognition as sr
 import pyttsx3
+from google.cloud import dialogflow_v2beta1 as dialogflow
+import os
 
-# Initialize speech recognition and TTS
-recognizer = sr.Recognizer()
+DIALOGFLOW_LANGUAGE_CODE = 'en'
+
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "d41030virtualassistant-ftco-1e0f9e2b5bd7.json" # Google service account key
+
+def detect_intent_texts(project_id, session_id, text, language_code):
+    session_client = dialogflow.SessionsClient()
+
+    session = session_client.session_path(project_id, session_id)
+
+    text_input = dialogflow.TextInput(text=text, language_code=language_code)
+    query_input = dialogflow.QueryInput(text=text_input)
+    response = session_client.detect_intent(session=session, query_input=query_input)
+
+    return response.query_result.fulfillment_text
+
+project_id = "d41030virtualassistant-ftco"  # Dialogflow project ID
+session_id = "123456" # Random number
+
+
+# Initialisation of speech recognition, tts engine, and spaCy model and matcher
+recogniser = sr.Recognizer()
 engine = pyttsx3.init()
 
 # Function to speak a response
@@ -14,39 +36,31 @@ def speak(text):
 def listen():
     with sr.Microphone() as source:
         print("Listening...") #could change this to show potential commands or something
-        audio = recognizer.listen(source)
+        audio = recogniser.listen(source)
         
         try:
-            return recognizer.recognize_google(audio).lower()
+            return recogniser.recognize_google(audio).lower()
         except sr.UnknownValueError:
             return "I couldn't understand what you said, please try again."
         except sr.RequestError:
             return "I'm having trouble connecting to the speech service."
 
-# Function to handle the "search for" command
-def handle_search_command(command):
-    # Extract the search query from the command
-    # Assuming the command starts with "search for"
-    query = command.replace("search for", "", 1).strip()
-    
-    # Here you would add the logic to perform the search, for now we'll just repeat the query
-    speak(f"Searching for {query}")
 
 def main():
     while True:
         # Listen for commands
         command = listen()
-        print(f"You said: {command}")
-
-        # Check if the user said 'search for'
-        if 'search for' in command: #include the other requests later
-            handle_search_command(command)
-        elif 'stop listening' in command:
-            # Add a command to stop the assistant from listening
-            speak("Goodbye!") #probably change this to a terminal input
+               
+        if 'stop listening' in command:
+            print("Goodbye!") #could change to assistant speaking
             break
-        else:
-            speak("I'm sorry, I can only help with search requests right now.") #make this say invalid request or something later
+        
+        print(f"You said: {command}")    
+        response_text = detect_intent_texts(project_id, session_id, command, DIALOGFLOW_LANGUAGE_CODE)
+        speak(response_text)
+        # Check if the user said 'search for', or find intents
+
+ 
 
 if __name__ == "__main__":
     main()
