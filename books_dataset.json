@@ -1,0 +1,92 @@
+[
+    {
+        "title": "A Brief History of Time",
+        "author": "Stephen Hawking",
+        "genre": "Science",
+        "description": "An iconic exploration of the mysteries of the universe.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "The Structure of Scientific Revolutions",
+        "author": "Thomas S. Kuhn",
+        "genre": "Philosophy of Science",
+        "description": "A seminal work on the history and philosophy of science.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "Principles of Economics",
+        "author": "N. Gregory Mankiw",
+        "genre": "Economics",
+        "description": "A comprehensive introduction to the principles of economics.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "Introduction to Algorithms",
+        "author": "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein",
+        "genre": "Computer Science",
+        "description": "The book covers a broad range of algorithms in depth, yet makes their design and analysis accessible to all levels of readers",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "Psychology",
+        "author": "David G. Myers",
+        "genre": "Psychology",
+        "description": "An engaging overview of various psychological theories and practices.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "The Elements of Statistical Learning",
+        "author": "Trevor Hastie, Robert Tibshirani, and Jerome Friedman",
+        "genre": "Statistics/Data Science",
+        "description": "A detailed introduction to statistical learning theory.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "The Western Canon: The Books and School of the Ages",
+        "author": "Harold Bloom",
+        "genre": "Literature",
+        "description": "A critical examination of Western literary canon.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "Guns, Germs, and Steel: The Fates of Human Societies",
+        "author": "Jared Diamond",
+        "genre": "History/Anthropology",
+        "description": "A multidisciplinary understanding of human societies and historical developments.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "Understanding Analysis",
+        "author": "Stephen Abbott",
+        "genre": "Mathematics",
+        "description": "An introduction to mathematical analysis, focusing on its narrative and clarity.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    },
+    {
+        "title": "The Republic",
+        "author": "Plato",
+        "genre": "Philosophy",
+        "description": "A foundational text in Western philosophy and political theory.",
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
+    }
+]
