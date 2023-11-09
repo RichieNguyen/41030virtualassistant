@@ -1,14 +1,16 @@
 [
     {
+        "ID": 1,
         "title": "A Brief History of Time",
         "author": "Stephen Hawking",
         "genre": "Science",
         "description": "An iconic exploration of the mysteries of the universe.",
-        "reserved": false,
-        "reservation": null,
-        "reservedBy": null
+        "reserved": true,
+        "reservation": "2023-11-17",
+        "reservedBy": "123"
     },
     {
+        "ID": 2,
         "title": "The Structure of Scientific Revolutions",
         "author": "Thomas S. Kuhn",
         "genre": "Philosophy of Science",
@@ -18,6 +20,7 @@
         "reservedBy": null
     },
     {
+        "ID": 3,
         "title": "Principles of Economics",
         "author": "N. Gregory Mankiw",
         "genre": "Economics",
@@ -27,6 +30,7 @@
         "reservedBy": null
     },
     {
+        "ID": 4,
         "title": "Introduction to Algorithms",
         "author": "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein",
         "genre": "Computer Science",
@@ -36,6 +40,7 @@
         "reservedBy": null
     },
     {
+        "ID": 5,
         "title": "Psychology",
         "author": "David G. Myers",
         "genre": "Psychology",
@@ -45,6 +50,7 @@
         "reservedBy": null
     },
     {
+        "ID": 6,
         "title": "The Elements of Statistical Learning",
         "author": "Trevor Hastie, Robert Tibshirani, and Jerome Friedman",
         "genre": "Statistics/Data Science",
@@ -54,6 +60,7 @@
         "reservedBy": null
     },
     {
+        "ID": 7,
         "title": "The Western Canon: The Books and School of the Ages",
         "author": "Harold Bloom",
         "genre": "Literature",
@@ -63,6 +70,7 @@
         "reservedBy": null
     },
     {
+        "ID": 8,
         "title": "Guns, Germs, and Steel: The Fates of Human Societies",
         "author": "Jared Diamond",
         "genre": "History/Anthropology",
@@ -72,6 +80,7 @@
         "reservedBy": null
     },
     {
+        "ID": 9,
         "title": "Understanding Analysis",
         "author": "Stephen Abbott",
         "genre": "Mathematics",
@@ -81,6 +90,7 @@
         "reservedBy": null
     },
     {
+        "ID": 10,
         "title": "The Republic",
         "author": "Plato",
         "genre": "Philosophy",
