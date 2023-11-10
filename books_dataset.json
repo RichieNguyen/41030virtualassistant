@@ -5,9 +5,9 @@
         "author": "Stephen Hawking",
         "genre": "Science",
         "description": "An iconic exploration of the mysteries of the universe.",
-        "reserved": true,
-        "reservation": "2023-11-17",
-        "reservedBy": "123"
+        "reserved": false,
+        "reservation": null,
+        "reservedBy": null
     },
     {
         "ID": 2,

@@ -6,25 +6,30 @@ import json
 from datetime import datetime, timedelta
 from word2number import w2n
 import isodate
+import spacy
+import sys
 
 # Initialisation
 DIALOGFLOW_LANGUAGE_CODE = 'en'
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "d41030virtualassistant-ftco-1e0f9e2b5bd7.json" # Google service account key
 project_id = "d41030virtualassistant-ftco"  # Dialogflow project ID
-session_id = "12345" # Random number, change for new sessions when debugging for follow-up intents
+session_id = "12346" # Random number, change for new sessions when debugging for follow-up intents
 recogniser = sr.Recognizer()
 engine = pyttsx3.init()
-#userid = None
-userid ='123'
+userid = None
 current_reservation = {}
+current_return ={}
+nlp = spacy.load("en_core_web_sm")
 
-# Initialise json dataset 
+# Initialise json datasets
 with open('books_dataset.json', 'r') as file:
-    books_dataset = json.load(file)
-
+    books_dataset = json.load(file)    
+with open('uts_faq.json', 'r') as file:
+    faq = json.load(file)
 
 def detect_intent_texts(project_id, session_id, text, language_code):
     global current_reservation
+    global current_return
     global userid
     
     session_client = dialogflow.SessionsClient()
@@ -63,49 +68,52 @@ def detect_intent_texts(project_id, session_id, text, language_code):
             print_search_results(results)
             if results:
                 check_search_availability(results)
+            else:
+                speak("No books found under those crtieria.")    
     elif intent_name == "Reserve Intent":
         parameters = dict(response.query_result.parameters)
         title = parameters.get('title', '')        
         id = parameters.get('id', '')
         
-        # Convert id value into an integer for search function
         if id is not None and isinstance(id, (float, int)):
             id = int(id)
         
         search_results = search_books_by_title_or_id(title, id)
         num_results = len(search_results)
+        print_search_results(search_results)
 
-        if num_results == 1: # Reserve only if one book found, ask for duration of reservation
-            # need to include check on whether the book is already reserved or not
-            print_search_results(search_results)
-            current_reservation['title'] = search_results[0]['title']
-            current_reservation['ID'] = search_results[0]['ID']    
+        if num_results == 1: # Reserve only if one book found, check reservation status, then ask for duration of reservation
             if check_reserved(search_results[0]):
+                speak(f"The book '{search_results[0]['title']}' is already reserved until {search_results[0]['reservation']}.")
                 remove_context(project_id, session_id, 'ReserveIntent-followup')
-                current_reservation = {}       
-     
+                current_reservation = {}
+            else:
+                current_reservation['title'] = search_results[0]['title']
+                current_reservation['ID'] = search_results[0]['ID']
+                speak(f"The book '{search_results[0]['title']}' is available for reservation, how long would you like to reserve it for (1-10 days).")                            
         elif num_results > 1:
             remove_context(project_id, session_id, 'ReserveIntent-followup')
             current_reservation = {}
-            print_search_results(search_results)
+
             speak("Multiple books found. Please be more specific.")
         else:
             remove_context(project_id, session_id, 'ReserveIntent-followup')
             current_reservation = {}
-            speak("There is no book with this ID or name, please try again")
-    #optionally, add cancel intent (cancelling current action/followup intents)
+            speak("There is no book with this ID or name, please include the ID or name of the book you are reserving and try to reserve again")
+    elif intent_name == "Reserve Intent - cancel": # Cancel intent, when user cancels reservation attempt
+        remove_context(project_id, session_id, 'ReserveIntent-followup')
+        current_reservation = {}
+        speak("Cancelling your reservation")
     elif intent_name == "Duration Intent":
         parameters = dict(response.query_result.parameters)        
         title = current_reservation.get('title')
         id = current_reservation.get('ID')
         duration = parameters.get('duration', '')
         
-        # Convert id value into an integer for search function
         if id is not None and isinstance(id, (float, int)):
             id = int(id)
         
         duration_days = convert_iso_duration_to_days(duration)
-        print(duration_days)
 
         for book in books_dataset:
             if book['ID'] == id:
@@ -116,31 +124,117 @@ def detect_intent_texts(project_id, session_id, text, language_code):
                 book['reserved'] = True
                 book['reservation'] = end_date_str
                 book['reservedBy'] = userid
-                # Update .json file with book and reservation details
+                
+                speak(f"The book '{book['title']}' has been reserved for {str(duration_days)} days. The return date is {end_date_str}")
+                # Update .json file
                 with open('books_dataset.json', 'w') as f:
                     json.dump(books_dataset, f, indent=4)
                 current_reservation = {}
                 break
     elif intent_name == "View Reserved Intent":
-        #create the intent in dialogflow
-        #check if any books are reserved under user id
-        #if yes, show all books reserved
-        #if no, say no books reserved
-        print("view reserved function here")
+        search_results = search_reserved_books_by_userid(userid)
+        num_results = len(search_results)
+        
+        if num_results >= 1:
+            print_search_results(search_results)
+            speak("Here is your list of reserved books.")
+        else:
+            speak("You have no books reserved.")
     elif intent_name == "Return Intent":
-        #check if any parameters given (if no, prompt for parameters)
-        #check if book is reserved by current userid
-        #if no, say so and end intent
-        #if yes, ask for confirmation? or just process return
-        print("return book intent here")
+        parameters = dict(response.query_result.parameters)
+        title = parameters.get('title', '')        
+        id = parameters.get('id', '')
+        if id is not None and isinstance(id, (float, int)):
+            id = int(id)
+        
+        search_results = search_books_by_title_or_id(title, id) 
+        num_results = len(search_results)
+        print_search_results(search_results)
+
+        if num_results == 1: # Return only if one book found
+            if check_reserved(search_results[0]): # Check if book is reserved
+                if check_book_by_userid(search_results[0], userid): # Check if book is reserved by userid
+                    current_return['title'] = search_results[0]['title']
+                    current_return['ID'] = search_results[0]['ID']
+                    speak(f"The book '{search_results[0]['title']}' can be returned. Please confirm if you would like to return the book")
+                else:
+                    speak(f"The book '{search_results[0]['title']}' is reserved by another user. Please try again.")
+                    remove_context(project_id, session_id, 'ReturnIntent-followup')
+                    current_return = {}  
+            else:
+                remove_context(project_id, session_id, 'ReturnIntent-followup')
+                current_return = {}
+                speak(f"The book '{search_results[0]['title']}' cannot be returned because it is not reserved. Please try again")                                               
+        elif num_results > 1:
+            remove_context(project_id, session_id, 'ReturnIntent-followup')
+            current_return = {}
+            speak("Multiple books found. Please be more specific.")
+        else: 
+            remove_context(project_id, session_id, 'ReturnIntent-followup')
+            current_return = {}
+            speak("There is no book with this ID or name, please include the ID or name of the book you are returning and try to return again")        
+    elif intent_name == 'Return Intent - yes': 
+        title = current_return.get('title')
+        id = current_return.get('ID')
+        
+        if id is not None and isinstance(id, (float, int)):
+            id = int(id)
+
+        for book in books_dataset:
+            if book['ID'] == id:
+                book['reserved'] = False
+                book['reservation'] = None
+                book['reservedBy'] = None
+                
+                speak(f"The book '{book['title']}' has been returned.")
+                
+                # Update .json file
+                with open('books_dataset.json', 'w') as f:
+                    json.dump(books_dataset, f, indent=4)
+                current_return = {}
+                break
+    elif intent_name == 'Return Intent - no':
+        remove_context(project_id, session_id, 'ReturnIntent-followup')
+        current_return = {}
+        speak("Keeping your reservation")
     elif intent_name == "FAQ Intent":
-        #look at faq prebuilt agent/intent in dialogflow
-        #if can't then look at other methods of faq (qnamaker, etc)
-        print("faq function here")
+        user_query = response.query_result.query_text
+        keywords = extract_keywords(user_query)
+        answer = find_faq_answer(keywords)
+        
+        if len(answer) > 1:
+            answers_text = "\n\n".join(faq for faq in answer)
+            speak("Multiple questions found that fit your query. Here are some answers that might help:")
+            print(answers_text)
+        elif answer:
+            speak("Retrieving response from UTS FAQ")
+            print(answer[0])
+        else:
+            speak("Sorry, I couldn't find an answer to your question.")
+
+    elif intent_name == "Functionalities Intent":
+        speak("I can assist with multiple functions:\n1. Search for books provided at least the title, author, or genre of book\n2. Reserve books for 1-10 days given the books title or ID.\n3. View any of your reserved books.\n4. Return any of your reserved books early.\n5. Answer common UTS University FAQs on Admissions, Offers, Enrolment/Course advice, or Student ID cards")
     else:
         return  
-
     return 
+
+# Function to extract keywords from text input using spaCy
+def extract_keywords(text):
+    doc = nlp(text)
+    keywords = [token.text for token in doc if token.is_stop != True and token.is_punct != True]
+    return keywords
+
+
+def find_faq_answer(keywords):
+    matching_faqs = []
+    
+    for q in faq:
+        if all(keyword.lower() in q['question'].lower() for keyword in keywords):
+            formatted_faq = f"Q: {q['question']}\nA: {q['answer']}"
+            matching_faqs.append(formatted_faq)
+            
+    return matching_faqs
+
 
 # Function to remove follow-up contexts, for when a function is called but cannot be executed (e.g. attempting to reserve a book that is already reserved)
 def remove_context(project_id, session_id, context_name):
@@ -211,19 +305,29 @@ def search_books_by_title_or_id(title=None, id=None):
         elif id and str(book['ID']) == str(id):
             results.append(book)
     return results
+
+
+def search_reserved_books_by_userid(userid=None):
+    results = []
+    for book in books_dataset:
+        if book['reservedBy'] is not None and book['reservedBy'] == userid and book['reserved'] is True:
+            results.append(book)
+    return results
+
+    
+        
         
 def check_reserved(book):
-    if book['reserved']:
-        speak(f"The book '{book['title']}' is already reserved until {book['reservation']}.")
+    if book['reserved'] is True:
         return True
-    speak(f"The book '{book['title']}' is available for reservation, how long would you like to reserve it for (1-10 days).")
     return False
    
+def check_book_by_userid(book, userid):
+    if book['reservedBy'] is not None and book['reservedBy'] == userid:
+        return True
+    return False
 
 def print_search_results(results):
-    if not results:
-        speak("No books found under those criteria. Please enter a new query")
-        return
     for book in results:
         if book['reserved'] is False:
             print(f"""
@@ -249,11 +353,25 @@ def check_search_availability(results):
     available_books = [book for book in results if not book['reserved']]
     
     if not available_books:
-        speak("None of the listed books are available for reservation, please enter a new query")
+        speak("None of the listed books are available for reservation")
         return
-    speak("There are books listed that are available for reservation, let me know the title or ID of the book you would like to reserve. Otherwise please enter a new query.")
-
-
+    speak("There are books listed that are available for reservation, let me know the title or ID of the book you would like to reserve.")
+    
+# Function to check current reservations and remove reservations past the due date
+def update_expired_reservations():
+    for book in books_dataset:
+        if book['reserved']:
+            reservation_end_date_str = book.get('reservation', '')
+            if reservation_end_date_str:
+                reservation_end_date = datetime.strptime(reservation_end_date_str, '%Y-%m-%d')
+                if reservation_end_date < datetime.now():
+                    book['reserved'] = False
+                    book['reservation'] = None
+                    book['reservedBy'] = None
+    # Update json file
+    with open('books_dataset.json', 'w') as f:
+        json.dump(books_dataset, f, indent=4)
+        current_reservation = {}
 
 # Function to speak a response
 def speak(text):
@@ -276,7 +394,7 @@ def convert_numbers(text):
 # Function to listen for audio and convert it to text
 def listen():
     with sr.Microphone() as source:
-        print(f"Listening...") # Could change this to show potential commands or something
+        print("Listening...") # Could change this to show potential commands or something
         audio = recogniser.listen(source)
         
         try:
@@ -288,26 +406,42 @@ def listen():
         except sr.RequestError:
             return "I'm having trouble connecting to the speech service."
 
+def validate_user_id(input):
+    if input and input.isdigit():
+        return str(input)
+    else:
+        return None
 
 def main():
     global userid
-    #include a function to check for reservaation dates of json, update when a reservation expires - convert the string value back into a datetime format and verify through current date
+    update_expired_reservations()
     
-    
-    # Save time debugging by commenting out this beginning section and setting a global userid variable
+    # Debug by commenting out this beginning section and manually setting a global userid variable
     #speak("Welcome to Library Virtual Assistant")
-    #speak(f"Please login with your user id")
-    #userid = listen()
-    #print(f"Logged into {userid}")
-    #speak(f"Please speak your query, you can search, reserve, view your reservations, or ask a question if its in the FAQ.")
-    #speak(f"Say 'stop listening' if you no longer have queries.")
+    speak("Please login with your user id")
+    while True:
+        userid_input = listen()
+        userid = validate_user_id(userid_input)
+        
+        if "cancel" in userid_input.lower():
+            print("Exiting program.")
+            sys.exit() 
+        if userid is not None:
+            print(f"Logged into: {userid}")
+            break
+        else:
+            speak("Invalid input. Try again and ensure your user ID contains only numbers.")
+            print("Say 'cancel' to exit the program if you do not know your user id")
+
+    #speak("Please speak your query, you can search, reserve, view your reservations, or ask a question if its in the FAQ.")
+    #speak("Say 'stop listening' if you no longer have queries.")
     
     while True:
         # Listen for commands
         #command = listen()
         
         # Debug
-        command = "reserve 1"
+        command = "how do i defer my offer"
         
         
         if 'stop listening' in command:
@@ -315,8 +449,8 @@ def main():
             break
         else: 
             detect_intent_texts(project_id, session_id, command, DIALOGFLOW_LANGUAGE_CODE)
-            command = "reserve for 10080 minutes"
-            detect_intent_texts(project_id, session_id, command, DIALOGFLOW_LANGUAGE_CODE)
+            #command = "yes"
+            #detect_intent_texts(project_id, session_id, command, DIALOGFLOW_LANGUAGE_CODE)
             
             # Debug with manual command line
             break
