@@ -45,8 +45,6 @@ def detect_intent_texts(project_id, session_id, text, language_code):
     #print(f"Intent name: {intent_name}")
     fulfillment_text = response.query_result.fulfillment_text # Dialogflow output
     
-    
-    # Consider including intent for looking up commands e.g. "what can you do"
     if intent_name == "Search Intent":
         speak(fulfillment_text)
         parameters = dict(response.query_result.parameters)
@@ -224,7 +222,6 @@ def extract_keywords(text):
     keywords = [token.text for token in doc if token.is_stop != True and token.is_punct != True]
     return keywords
 
-
 def find_faq_answer(keywords):
     matching_faqs = []
     
@@ -234,7 +231,6 @@ def find_faq_answer(keywords):
             matching_faqs.append(formatted_faq)
             
     return matching_faqs
-
 
 # Function to remove follow-up contexts, for when a function is called but cannot be executed (e.g. attempting to reserve a book that is already reserved)
 def remove_context(project_id, session_id, context_name):
@@ -306,16 +302,12 @@ def search_books_by_title_or_id(title=None, id=None):
             results.append(book)
     return results
 
-
 def search_reserved_books_by_userid(userid=None):
     results = []
     for book in books_dataset:
         if book['reservedBy'] is not None and book['reservedBy'] == userid and book['reserved'] is True:
             results.append(book)
-    return results
-
-    
-        
+    return results     
         
 def check_reserved(book):
     if book['reserved'] is True:
@@ -355,7 +347,7 @@ def check_search_availability(results):
     if not available_books:
         speak("None of the listed books are available for reservation")
         return
-    speak("There are books listed that are available for reservation, let me know the title or ID of the book you would like to reserve.")
+    speak("There are books listed that are available for reservation.")
     
 # Function to check current reservations and remove reservations past the due date
 def update_expired_reservations():
@@ -416,15 +408,15 @@ def main():
     global userid
     update_expired_reservations()
     
-    # Debug by commenting out this beginning section and manually setting a global userid variable
-    #speak("Welcome to Library Virtual Assistant")
+    #Debug by commenting out this beginning section and manually setting a global userid variable
+    speak("Welcome to Library Virtual Assistant")
     speak("Please login with your user id")
     while True:
         userid_input = listen()
         userid = validate_user_id(userid_input)
         
         if "cancel" in userid_input.lower():
-            print("Exiting program.")
+            print("Goodbye!")
             sys.exit() 
         if userid is not None:
             print(f"Logged into: {userid}")
@@ -433,19 +425,19 @@ def main():
             speak("Invalid input. Try again and ensure your user ID contains only numbers.")
             print("Say 'cancel' to exit the program if you do not know your user id")
 
-    #speak("Please speak your query, you can search, reserve, view your reservations, or ask a question if its in the FAQ.")
-    #speak("Say 'stop listening' if you no longer have queries.")
+    speak("Please speak your query, you can search, reserve, view your reservations, or ask a question if its in the FAQ.")
+    speak("Say 'stop listening' if you no longer have queries.")
     
     while True:
         # Listen for commands
-        #command = listen()
+        command = listen()
         
         # Debug
-        command = "how do i defer my offer"
+        #command = "search for books about science"
         
         
         if 'stop listening' in command:
-            print("Goodbye!") # Could change to assistant speaking, or just add it
+            print("Goodbye!")
             break
         else: 
             detect_intent_texts(project_id, session_id, command, DIALOGFLOW_LANGUAGE_CODE)
@@ -453,11 +445,7 @@ def main():
             #detect_intent_texts(project_id, session_id, command, DIALOGFLOW_LANGUAGE_CODE)
             
             # Debug with manual command line
-            break
+            #break
         
- 
-
- 
-
 if __name__ == "__main__":
     main()
