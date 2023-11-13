@@ -42,7 +42,7 @@ def detect_intent_texts(project_id, session_id, text, language_code):
     
     intent_name = response.query_result.intent.display_name
     # Debug
-    #print(f"Intent name: {intent_name}")
+    # print(f"Intent name: {intent_name}")
     fulfillment_text = response.query_result.fulfillment_text # Dialogflow output
     
     if intent_name == "Search Intent":
@@ -213,7 +213,7 @@ def detect_intent_texts(project_id, session_id, text, language_code):
     elif intent_name == "Functionalities Intent":
         speak("I can assist with multiple functions:\n1. Search for books provided at least the title, author, or genre of book\n2. Reserve books for 1-10 days given the books title or ID.\n3. View any of your reserved books.\n4. Return any of your reserved books early.\n5. Answer common UTS University FAQs on Admissions, Offers, Enrolment/Course advice, or Student ID cards")
     else:
-        return  
+        speak(response.query_result.fulfillment_text)  
     return 
 
 # Function to extract keywords from text input using spaCy
@@ -387,7 +387,7 @@ def convert_numbers(text):
 def listen():
     with sr.Microphone() as source:
         print("Listening...") # Could change this to show potential commands or something
-        audio = recogniser.listen(source)
+        audio = recogniser.listen(source, phrase_time_limit=5, timeout=30)
         
         try:
             text = convert_numbers(recogniser.recognize_google(audio).lower())
@@ -412,18 +412,18 @@ def main():
     speak("Welcome to Library Virtual Assistant")
     speak("Please login with your user id")
     while True:
-        userid_input = listen()
-        userid = validate_user_id(userid_input)
-        
-        if "cancel" in userid_input.lower():
-            print("Goodbye!")
-            sys.exit() 
-        if userid is not None:
-            print(f"Logged into: {userid}")
-            break
-        else:
-            speak("Invalid input. Try again and ensure your user ID contains only numbers.")
-            print("Say 'cancel' to exit the program if you do not know your user id")
+       userid_input = listen()
+       userid = validate_user_id(userid_input)
+       
+       if "cancel" in userid_input.lower():
+           print("Goodbye!")
+           sys.exit() 
+       if userid is not None:
+           print(f"Logged into: {userid}")
+           break
+       else:
+           speak("Invalid input. Try again and ensure your user ID contains only numbers.")
+           print("Say 'cancel' to exit the program if you do not know your user id")
 
     speak("Please speak your query, you can search, reserve, view your reservations, or ask a question if its in the FAQ.")
     speak("Say 'stop listening' if you no longer have queries.")
@@ -433,7 +433,7 @@ def main():
         command = listen()
         
         # Debug
-        #command = "search for books about science"
+        # command = "test input"
         
         
         if 'stop listening' in command:
